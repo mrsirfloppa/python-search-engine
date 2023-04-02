@@ -5,3 +5,7 @@ Ability to add and close tabs with a "+" button and keyboard shortcuts.
 A full-screen mode toggled with the F11 key.
 
 Keyboard shortcuts for adding a new tab (Ctrl+T), closing the current tab (Ctrl+W), and toggling full-screen mode (F11).
+          
+search button
+
+image search button

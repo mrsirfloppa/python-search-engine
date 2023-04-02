@@ -1,72 +1,83 @@
 import sys
-import tkinter as tk
-from cefpython3 import cefpython as cef
+from PyQt5.QtCore import QUrl, Qt
+from PyQt5.QtGui import QKeySequence, QIcon
+from PyQt5.QtWidgets import (QApplication, QLineEdit, QMainWindow, QVBoxLayout, QWidget,
+                             QTabWidget, QPushButton, QHBoxLayout, QShortcut, QStyleFactory, QLabel)
+from PyQt5.QtWebEngineWidgets import QWebEngineView
 
-class MainFrame(tk.Frame):
-    def __init__(self, root):
-        self.browser_frame = None
-        self.navigation_bar = None
+class BrowserTab(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
-        tk.Frame.__init__(self, root)
-        self.root = root
+        self.browser = QWebEngineView()
+        self.browser.setUrl(QUrl("http://google.com"))
 
-        self.init_browser()
-        self.bind("<FocusIn>", self.on_focus_in)
-        self.bind("<FocusOut>", self.on_focus_out)
+        self.search_bar = QLineEdit()
+        self.search_bar.returnPressed.connect(self.navigate_to_url)
 
-    def init_browser(self):
-        window_info = cef.WindowInfo()
-        window_info.SetAsChild(self.winfo_id())
+        self.search_button = QPushButton("Search")
+        self.search_button.clicked.connect(self.navigate_to_url)
 
-        self.browser = cef.CreateBrowserSync(window_info=window_info, url="https://www.google.com/")
-        self.browser.SetClientHandler(LoadHandler(self))
+        self.image_search_button = QPushButton("Image Search")
+        self.image_search_button.clicked.connect(self.navigate_to_image_search)
 
-    def on_focus_in(self, _):
-        pass
+        toolbar_layout = QHBoxLayout()
+        toolbar_layout.addWidget(self.search_bar)
+        toolbar_layout.addWidget(self.search_button)
+        toolbar_layout.addWidget(self.image_search_button)
 
-    def on_focus_out(self, _):
-        pass
+        layout = QVBoxLayout()
+        layout.addLayout(toolbar_layout)
+        layout.addWidget(self.browser)
 
-class LoadHandler(object):
-    def __init__(self, main_frame):
-        self.main_frame = main_frame
+        self.setLayout(layout)
 
-def main():
-    sys.excepthook = cef.ExceptHook
-    cef.Initialize()
+    def navigate_to_url(self):
+        url = self.search_bar.text()
+        if not url.startswith("http"):
+            url = f"https://www.google.com/search?q={url}"
+        self.browser.setUrl(QUrl(url))
 
-    root = tk.Tk()
-    root.geometry("900x600")
+    def navigate_to_image_search(self):
+        query = self.search_bar.text()
+        url = f"https://www.google.com/search?q={query}&tbm=isch"
+        self.browser.setUrl(QUrl(url))
 
-    main_frame = MainFrame(root)
-    main_frame.pack(fill=tk.BOTH, expand=tk.YES)
+class SimpleWebBrowser(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-    def on_back_click():
-        main_frame.browser.GoBack()
+        self.tabs = QTabWidget()
+        self.tabs.setTabsClosable(True)
+        self.tabs.tabCloseRequested.connect(self.close_tab)
 
-    def on_forward_click():
-        main_frame.browser.GoForward()
+        self.add_new_tab(QUrl("http://google.com"))
+        self.setCentralWidget(self.tabs)
 
-    def on_reload_click():
-        main_frame.browser.Reload()
+        new_tab_shortcut = QShortcut(QKeySequence("Ctrl+T"), self)
+        new_tab_shortcut.activated.connect(self.add_new_tab)
 
-    def on_home_click():
-        main_frame.browser.LoadUrl("https://www.google.com/")
+    def add_new_tab(self, url=None):
+        if url is None:
+            url = QUrl("http://google.com")
 
-    back_button = tk.Button(root, text="Back", command=on_back_click)
-    back_button.pack(side=tk.LEFT)
+        new_tab = BrowserTab()
+        new_tab.browser.setUrl(url)
+        new_tab.search_bar.setText(url.toString())  # Convert QUrl to string
+        new_tab.browser.urlChanged.connect(lambda new_url: new_tab.search_bar.setText(new_url.toString()))
 
-    forward_button = tk.Button(root, text="Forward", command=on_forward_click)
-    forward_button.pack(side=tk.LEFT)
+        index = self.tabs.addTab(new_tab, "New Tab")
+        self.tabs.setCurrentIndex(index)
 
-    reload_button = tk.Button(root, text="Reload", command=on_reload_click)
-    reload_button.pack(side=tk.LEFT)
-
-    home_button = tk.Button(root, text="Home", command=on_home_click)
-    home_button.pack(side=tk.LEFT)
-
-    root.mainloop()
-    cef.Shutdown()
+    def close_tab(self, index):
+        if self.tabs.count() > 1:
+            self.tabs.removeTab(index)
 
 if __name__ == "__main__":
-    main()
+    app = QApplication(sys.argv)
+    app.setStyle(QStyleFactory.create("Fusion"))
+
+    browser = SimpleWebBrowser()
+    browser.show()
+
+    sys.exit(app.exec_())
