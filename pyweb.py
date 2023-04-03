@@ -21,10 +21,14 @@ class BrowserTab(QWidget):
         self.image_search_button = QPushButton("Image Search")
         self.image_search_button.clicked.connect(self.navigate_to_image_search)
 
+        self.video_search_button = QPushButton("Video Search")
+        self.video_search_button.clicked.connect(self.navigate_to_video_search)
+
         toolbar_layout = QHBoxLayout()
         toolbar_layout.addWidget(self.search_bar)
         toolbar_layout.addWidget(self.search_button)
         toolbar_layout.addWidget(self.image_search_button)
+        toolbar_layout.addWidget(self.video_search_button)
 
         layout = QVBoxLayout()
         layout.addLayout(toolbar_layout)
@@ -41,6 +45,11 @@ class BrowserTab(QWidget):
     def navigate_to_image_search(self):
         query = self.search_bar.text()
         url = f"https://www.google.com/search?q={query}&tbm=isch"
+        self.browser.setUrl(QUrl(url))
+
+    def navigate_to_video_search(self):
+        query = self.search_bar.text()
+        url = f"https://duckduckgo.com/?q={query}&iax=videos&ia=videos"
         self.browser.setUrl(QUrl(url))
 
 class SimpleWebBrowser(QMainWindow):
